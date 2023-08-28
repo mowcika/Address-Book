@@ -1,0 +1,778 @@
+<template>
+    <b-row class="match-height">
+        <b-col cols="12">
+            <b-card-code
+                title=""
+            >
+                <b-form @submit.prevent>
+                    <b-row>
+                        <b-col md="12">
+                            <div class="form-group-compose text-center compose-btn">
+                                <b-button
+                                    v-ripple.400="'rgba(255, 255, 255, 0.15)'"
+                                    variant="danger"
+                                    size="lg"
+                                    block
+                                >
+                                    <feather-icon
+                                        icon="ClockIcon"
+                                        class="mr-50 float-left"
+                                        size="20"
+                                        @click="historyIconName"
+                                    />
+                                    <feather-icon
+                                        icon="PhoneIcon"
+                                        class="mr-50"
+                                        size="20"
+                                        v-if="employerCard.event == 'Incoming'"
+                                    />
+                                    <feather-icon
+                                        icon="PhoneIcon"
+                                        class="mr-50"
+                                        size="20"
+                                        v-else
+                                    />
+                                    <b>{{ employerCard.phonenumber }}</b> {{ employerCard.event }} ...
+                                    <feather-icon
+                                        icon="CopyIcon"
+                                        class="mr-50 float-right"
+                                        size="20"
+                                        @click="copyIconName(employerCard.phonenumber)"
+                                    />
+                                </b-button>
+                                <br>
+                            </div>
+                        </b-col>
+                    </b-row>
+                    <b-row class="match-height" v-show="employerCard.status">
+                        <b-col
+                            lg="7"
+                            md="6"
+                        >
+                            <b-card
+                                text-variant="center"
+                                class="card card-congratulations"
+                            >
+                                <!-- images -->
+                                <b-img
+                                    :src="require('@/assets/images/elements/decore-left.png')"
+                                    class="congratulations-img-left"
+                                    v-show="employerCard.payment.amount > 0"
+                                />
+                                <b-img
+                                    :src="require('@/assets/images/elements/decore-right.png')"
+                                    class="congratulations-img-right"
+                                    v-show="employerCard.payment.amount > 0"
+                                />
+                                <!--/ images -->
+
+                                <b-avatar
+                                    variant="primary"
+                                    size="70"
+                                    class="shadow mb-2"
+                                >
+                                    <!--                                    {{ employerCard.list.image }}-->
+                                    <feather-icon
+                                        size="28"
+                                        icon="AwardIcon"
+                                    />
+                                </b-avatar>
+                                <h1 class="mb-1 mt-50 text-white">
+                                    {{ employerCard.list.companyName }}
+                                </h1>
+                                <b-card-text class="m-auto w-75"
+                                             v-if="Object.keys(employerCard.list).includes('address')"
+                                > {{
+                                    employerCard.list.address.replaceAll('#@#', ', ')
+                                    }}
+                                </b-card-text>
+                                <b-card-text class="m-auto w-75" v-else> No Address Found!
+                                </b-card-text>
+                                <b-card-text class="m-auto w-75"> Employer ID - <strong>{{
+                                    employerCard.list.id
+                                    }}</strong>
+                                </b-card-text>
+                                <b-card-text class="m-auto w-75"> Contact Person - <strong>{{
+                                    employerCard.list.firstname
+                                    }}</strong></b-card-text>
+                                <b-card-text class="m-auto w-75"> Email - <strong>{{ employerCard.list.email }}</strong>
+                                </b-card-text>
+                            </b-card>
+                        </b-col>
+                        <b-col
+                            lg="5"
+                            md="6"
+                        >
+                            <b-card class="card-congratulation-medal" style="border: 1px solid gold;"
+                            >
+                                <b-img
+                                    :src="require('@/assets/images/illustration/email.svg')"
+                                    class="congratulations-img-right"
+                                    style="position: absolute;right: 0;bottom: 0;"
+                                />
+                                <h4 class="mb-1"><span class="text-primary"><b>Executive</b></span> : <span
+                                    class="text-danger"
+                                > <b> {{ employerCard.executive }}</b></span></h4>
+                                <h5><span v-if="employerCard.payment.amount > 0">Paid 🎉</span><span v-else>Free</span>
+                                    Employer!</h5>
+                                <b-card-text class="font-small-3">
+                                    This Employer made {{ employerCard.payment.count }} payments with us
+                                </b-card-text>
+                                <h3 class="mb-30 mt-4">
+                                    Rs. {{ employerCard.payment.amount }}/-
+                                </h3>
+                                <b-img
+                                    :src="require('@/assets/images/illustration/badge.svg')"
+                                    class="congratulation-medal"
+                                    alt="Medal Pic"
+                                    v-show="employerCard.payment.amount > 0"
+                                />
+                            </b-card>
+                        </b-col>
+                    </b-row>
+                    <b-alert
+                        v-height-fade.appear
+                        variant="danger"
+                        :show="employerCard.status == false"
+                        class="mb-1"
+                    >
+                        <div class="alert-body" style="text-align: center;">
+                            <feather-icon
+                                icon="InfoIcon"
+                                class="mr-50"
+                            />
+                            {{ employerCard.message }}
+                        </div>
+                    </b-alert>
+                    <b-row aria-hidden="true" v-bind:class="{'disableOpacityCustom': employerCard.status == false}">
+                        <b-col md="3">
+                            <div class="email-app-menu">
+
+                                <vue-perfect-scrollbar
+                                    :settings="perfectScrollbarSettings"
+                                    class="sidebar-menu-list scroll-area"
+                                >
+                                    <!-- Filters -->
+                                    <b-list-group class="list-group-messages">
+                                        <b-list-group-item
+                                            v-for="filter in emailFilters"
+                                            :key="filter.title + $route.path"
+                                            :to="filter.route"
+                                            :active="isDynamicRouteActive(filter.route)"
+                                            @click="$emit('close-left-sidebar')"
+                                        >
+                                            <feather-icon
+                                                :icon="filter.icon"
+                                                size="18"
+                                                class="mr-75"
+                                            />
+                                            <span class="align-text-bottom line-height-1">{{ filter.title }}</span>
+                                            <b-badge
+                                                v-if="filter.title.toLowerCase()"
+                                                pill
+                                                :variant="resolveFilterBadgeColor(filter.title)"
+                                                class="float-right"
+                                            >
+                                                {{ filter.count }}
+                                            </b-badge>
+                                        </b-list-group-item>
+                                    </b-list-group>
+
+                                    <!-- Labels -->
+                                    <h6 class="section-label mt-3 mb-1 px-2" v-show="employerCard.payment.amount > 0">
+                                        Statistic
+                                    </h6>
+
+                                    <b-list-group class="list-group-labels" v-show="employerCard.payment.amount > 0">
+                                        <b-list-group-item
+                                            v-for="label in emailLabel"
+                                            :key="label.title + $route.path"
+                                            :to="label.route"
+                                            :active="isDynamicRouteActive(label.route)"
+                                            @click="$emit('close-left-sidebar')"
+                                        >
+                                                    <span
+                                                        class="bullet bullet-sm mr-1"
+                                                        :class="`bullet-${label.color}`"
+                                                    />
+                                            <span>{{ label.title }}</span>
+                                        </b-list-group-item>
+                                    </b-list-group>
+
+                                </vue-perfect-scrollbar>
+                            </div>
+                        </b-col>
+                        <b-col md="9" v-show="segment != 'statistic'" style="overflow-y: scroll;max-height: 250px;">
+                            <vue-perfect-scrollbar
+                                :settings="perfectScrollbarSettings"
+                                class="email-user-list scroll-area"
+                            >
+                                <ul class="email-media-list">
+                                    <b-media
+                                        v-for="email in emails"
+                                        :key="email.id"
+                                        tag="li"
+                                        no-body
+                                        :class="{ 'mail-read': email.isRead }"
+                                    >
+
+                                        <b-media-aside class="media-left mr-50">
+                                            <b-avatar
+                                                class="avatar"
+                                                size="40"
+                                                variant="primary"
+                                                :src="'https://nithrajobs.com/assets/dist/img/jobs_round_logo_black.webp'"
+                                            />
+                                        </b-media-aside>
+
+                                        <b-media-body>
+                                            <div class="mail-items">
+                                                <h5 class="mb-25">
+                                                    ID : # <span v-if="segment == 'franchise_company_debits'"
+                                                                 v-html="email.id"
+                                                ></span><span
+                                                    v-else
+                                                >{{ email.id }}</span>
+                                                </h5>
+                                                <span class="text-truncate">{{ email.subject }}</span>
+                                                <b-button v-show="segment == 'jobs'" @click="ClickMethod(email.id)"
+                                                          class="float-right"
+                                                >View
+                                                </b-button>
+                                            </div>
+                                            <div class="mail-message">
+                                                <p class="text-truncate mb-0">
+                                                    Validity : {{ email.message }}
+                                                </p>
+                                                <span class="mail-date">Created on : {{ email.time }}</span>
+                                                <b-badge v-if="email.status == 'Live'" variant="success" pill
+                                                         class="float-right"
+                                                >
+                                                    {{ email.status }}
+                                                </b-badge>
+                                                <b-badge v-if="email.status == 'Expired'" variant="danger" pill
+                                                         class="float-right"
+                                                >
+                                                    {{ email.status }}
+                                                </b-badge>
+                                            </div>
+                                            <hr>
+                                        </b-media-body>
+                                    </b-media>
+                                </ul>
+                                <div
+                                    v-show="!this.emails.length"
+                                    class="no-results"
+                                >
+                                    <center><h5>No Items Found </h5></center>
+                                </div>
+                            </vue-perfect-scrollbar>
+                        </b-col>
+                        <b-col md="9" v-show="segment == 'statistic'">
+                            <b-row class="match-height">
+                                <b-col cols="12">
+                                    <b-card no-body>
+                                        <b-card-header class="align-items-baseline">
+                                            <div>
+                                                <b-card-title class="mb-25">
+                                                    Payment Statistics
+                                                </b-card-title>
+                                                <b-card-text class="mb-0">
+                                                    Paid: {{ employerCard.payment.amount }} /-
+                                                </b-card-text>
+                                            </div>
+                                            <feather-icon
+                                                icon="SettingsIcon"
+                                                size="18"
+                                                class="text-muted cursor-pointer"
+                                            />
+                                        </b-card-header>
+                                        <b-card-body class="pb-0">
+                                            <!-- apex chart -->
+                                            <vue-apex-charts
+                                                ref="realtimeChart"
+                                                type="line"
+                                                height="240"
+                                                :options="salesLine.chartOptions"
+                                                :series="salesLine.series"
+                                            />
+                                        </b-card-body>
+                                    </b-card>
+                                </b-col>
+                            </b-row>
+                        </b-col>
+                    </b-row>
+                </b-form>
+                <view-private-jobs :id="model_id" :table=table></view-private-jobs>
+                <b-modal
+                    id="modal-call-history"
+                    cancel-variant="outline-secondary"
+                    no-close-on-backdrop
+                    centered
+                    size="lg"
+                    title="CALL HISTORY"
+                >
+                    <!--                    <b-table-->
+                    <!--                        :items="historyItems"-->
+                    <!--                        class="rounded-bottom"-->
+                    <!--                    />-->
+                    <small class="text-danger">** call history shows only today log</small>
+                    <b-table
+                        :items="historyItems"
+                        responsive
+                        class="mb-0"
+                        show-empty
+                    >
+                        <template #cell(event)="data">
+                            <feather-icon
+                                icon="PhoneIncomingIcon"
+                                class="mr-50 text-primary"
+                                size="15"
+                                v-show="data.value == 1"
+                            />
+                            <feather-icon
+                                icon="PhoneOutgoingIcon"
+                                class="mr-50 text-success"
+                                size="15"
+                                v-show="data.value == 2"
+                            />
+                            <feather-icon
+                                icon="PhoneMissedIcon"
+                                class="mr-50 text-danger"
+                                size="15"
+                                v-show="data.value == 3"
+                            />
+                        </template>
+                        <template #empty="scope">
+                            Empty row
+                        </template>
+                    </b-table>
+                </b-modal>
+            </b-card-code>
+        </b-col>
+    </b-row>
+</template>
+
+<script>
+import BCardCode from '@core/components/b-card-code'
+import VuePerfectScrollbar from 'vue-perfect-scrollbar'
+import { useClipboard } from '@vueuse/core'
+import ToastificationContent from '@core/components/toastification/ToastificationContent.vue'
+import { useToast } from 'vue-toastification/composition'
+import {
+    BButton,
+    BListGroup,
+    BListGroupItem,
+    BBadge,
+    BForm,
+    BRow,
+    BCol,
+    BAlert,
+    BMediaBody,
+    BMedia,
+    BMediaAside,
+    BAvatar,
+    BFormCheckbox,
+    BCard,
+    BImg,
+    BCardText,
+    BModal,
+    VBModal,
+    BCardHeader,
+    BCardTitle,
+    BCardBody,
+    BTable
+} from 'bootstrap-vue'
+import { isDynamicRouteActive } from '@core/utils/utils'
+import Ripple from 'vue-ripple-directive'
+import { ref } from '@vue/composition-api'
+import { max, min, required } from '@validations'
+import { heightFade } from '@core/directives/animations'
+import ViewPrivateJobs from '@/views/elements/ViewPrivateJobs.vue'
+import VueApexCharts from 'vue-apexcharts'
+import { $themeColors } from '@themeConfig'
+import Pusher from 'pusher-js'
+
+export default {
+    directives: {
+        Ripple,
+        'height-fade': heightFade,
+    },
+    components: {
+        BForm,
+        BRow,
+        BCol,
+        BAlert,
+        BButton,
+        BListGroup,
+        BListGroupItem,
+        BBadge,
+        BMediaBody,
+        BMedia,
+        BMediaAside,
+        BAvatar,
+        BFormCheckbox,
+        BCard,
+        BImg,
+        BCardText,
+        BCardCode,
+        VuePerfectScrollbar,
+        ViewPrivateJobs,
+        BModal,
+        VBModal,
+        ToastificationContent,
+        VueApexCharts,
+        BCardHeader,
+        BCardTitle,
+        BCardBody,
+        BTable
+    },
+    props: {},
+    setup() {
+        let notifyURL = 'https://nithra.in/jobspro/employer/onCall/load'
+        const toast = useToast()
+        const { copy } = useClipboard()
+        const copyIconName = iconName => {
+            copy(iconName)
+
+            toast({
+                component: ToastificationContent,
+                props: {
+                    title: iconName + ' copied',
+                    icon: 'CopyIcon',
+                    variant: 'success',
+                },
+            })
+        }
+        const perfectScrollbarSettings = {
+            maxScrollbarLength: 4,
+        }
+        const emails = ref([])
+        emails.value = []
+        const emailFilters = [
+            {
+                title: 'Post',
+                icon: 'MailIcon',
+                count: 0,
+                route: {
+                    name: 'employer-onCall',
+                    params: { segment: 'jobs' }
+                }
+            },
+            {
+                title: 'Draft',
+                icon: 'Edit3Icon',
+                count: 0,
+                route: {
+                    name: 'employer-onCall',
+                    params: { segment: 'draft_jobs' }
+                }
+            },
+            {
+                title: 'Invoice',
+                icon: 'SendIcon',
+                count: 0,
+                route: {
+                    name: 'employer-onCall',
+                    params: { segment: 'franchise_company_debits' }
+                }
+            }
+        ]
+
+        const emailLabel = [
+            {
+                title: 'Payment',
+                color: 'success',
+                route: {
+                    name: 'employer-onCall',
+                    params: { segment: 'statistic' }
+                }
+            }
+        ]
+
+        const resolveFilterBadgeColor = filter => {
+            // if (filter === 'Draft') return 'light-warning'
+            // if (filter === 'Spam') return 'light-danger'
+            // return 'light-primary'
+            return 'light-warning'
+        }
+
+        return {
+            // UI
+            copyIconName,
+            perfectScrollbarSettings,
+            isDynamicRouteActive,
+            resolveFilterBadgeColor,
+
+            // Filter & Labels
+            emails,
+            emailFilters,
+            emailLabel,
+            notifyURL
+        }
+    },
+    data() {
+        const now = new Date()
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+        // 15th two months prior
+        const minDate = new Date(today)
+        // minDate.setMonth(minDate.getMonth() - 2)
+        // minDate.setDate(15)
+
+        // 15th in two months
+        const maxDate = new Date(today)
+        const nextFollowDate = new Date()
+        // maxDate.setMonth(maxDate.getMonth() + 2)
+        maxDate.setDate(now.getDate() + 15)
+        nextFollowDate.setDate(now.getDate() + 3)
+        return {
+            data: {
+                min: minDate,
+                max: maxDate,
+                nextFollowDate: nextFollowDate,
+                isMobileDisabled: false,
+                sample: [],
+            },
+            employerCard: {
+                message: 'No data found with our record.',
+                status: false,
+                phonenumber: 'Loading',
+                event: '',
+                eventClass: '',
+                payment: {
+                    count: 0,
+                    amount: 0
+                },
+                list: {
+                    address: '',
+                    companyName: '',
+                    dist: '',
+                    email: '',
+                    firstname: '',
+                    id: '',
+                    phonenumber: '',
+                    pincode: '',
+                    image: ''
+                }
+            },
+            salesLine: {
+                series: [
+                    {
+                        name: 'Rs',
+                        data: [],
+                    },
+                ],
+                chartOptions: {
+                    chart: {
+                        toolbar: { show: false },
+                        zoom: { enabled: false },
+                        type: 'line',
+                        dropShadow: {
+                            enabled: true,
+                            top: 18,
+                            left: 2,
+                            blur: 5,
+                            opacity: 0.2,
+                        },
+                        offsetX: -10,
+                    },
+                    stroke: {
+                        curve: 'smooth',
+                        width: 4,
+                    },
+                    grid: {
+                        borderColor: '#ebe9f1',
+                        padding: {
+                            top: -20,
+                            bottom: 5,
+                            left: 20,
+                        },
+                    },
+                    legend: {
+                        show: false,
+                    },
+                    colors: ['#df87f2'],
+                    fill: {
+                        type: 'gradient',
+                        gradient: {
+                            shade: 'dark',
+                            inverseColors: false,
+                            gradientToColors: [$themeColors.primary],
+                            shadeIntensity: 1,
+                            type: 'horizontal',
+                            opacityFrom: 1,
+                            opacityTo: 1,
+                            stops: [0, 100, 100, 100],
+                        },
+                    },
+                    markers: {
+                        size: 0,
+                        hover: {
+                            size: 5,
+                        },
+                    },
+                    xaxis: {
+                        labels: {
+                            offsetY: 5,
+                            style: {
+                                colors: '#b9b9c3',
+                                fontSize: '0.857rem',
+                            },
+                        },
+                        axisTicks: {
+                            show: false,
+                        },
+                        categories: [],
+                        axisBorder: {
+                            show: false,
+                        },
+                        tickPlacement: 'on',
+                    },
+                    yaxis: {
+                        tickAmount: 5,
+                        labels: {
+                            style: {
+                                colors: '#b9b9c3',
+                                fontSize: '0.857rem',
+                            },
+                            formatter(val) {
+                                return val > 999 ? `${(val / 1000).toFixed(1)}k` : val
+                            },
+                        },
+                    },
+                    tooltip: {
+                        x: { show: false },
+                    },
+                },
+            },
+            model_id: '',
+            table: '',
+            historyItems: [],
+            segment: this.$route.params.segment,
+            initial_loading: true,
+        }
+
+    },
+    beforeMount() {
+        // this.onLoadTableData()
+    },
+    async created() {
+        this.segment = this.$route.params.segment
+        const segment = this.$route.params.segment
+        var localUserId = JSON.parse(localStorage.getItem('userData')).id
+        const callAxios = await this.callAxios('/getEmployerStatus', {
+            localUserId: localUserId,
+            segment: segment
+        }, 'post')
+        if (callAxios.data.status) {
+            this.employerCard = callAxios.data
+            callAxios.data.count.forEach((value, index) => {
+                this.emailFilters[index].count = value.count
+            })
+            this.onLoadTableData(this.employerCard.list.id)
+        } else {
+            callAxios.data.list = { address: '' }
+            this.employerCard = callAxios.data
+            this.emails = []
+        }
+    },
+    async mounted() {
+        this.$root.$on('btnCellRenderer1Event()', (index, url, data, dataJson) => {
+            this.btnCellRenderer1(index, url, data, dataJson)
+        })
+        let notifyURL = 'https://nithra.in/jobspro/employer/onCall/load'
+        var localUserId = JSON.parse(localStorage.getItem('userData')).id
+        var userArray = [1, 2, 24, 199, 19, 30, 49, 55, 63, 67, 81, 88, 101, 109, 136, 138, 146, 149, 150, 157, 158, 160, 161, 162, 164, 165, 168, 176, 177, 178, 184, 187, 193, 196, 206]
+        if (userArray.includes(localUserId)) {
+            Pusher.logToConsole = false
+            var pusher = new Pusher('a18deb42fc681e537188', {
+                cluster: 'ap2'
+            })
+            var channel = pusher.subscribe('job-begin')
+            const routeData = this.$router.resolve({
+                name: 'employer-onCall',
+                params: { segment: 'load' }
+            })
+            channel.bind(localUserId, function (data) {
+                // window.open('https://nithra.in/jobspro/employer/onCall/load', '_blank').focus() // routeData.href _self
+                window.open(routeData.href, '_self')
+                    .focus()
+                if (Notification.permission !== 'granted') {
+                    Notification.requestPermission()
+                } else {
+                    let notification = new Notification('Calling...', {
+                        body: data.message, // content for the alert
+                        icon: 'https://d2hy6ree306xec.cloudfront.net/jobs_app_logo.png' // optional image url
+                    })
+// var audio = new Audio('https://d2hy6ree306xec.cloudfront.net/notification%20tone.mp3');
+                    // audio.play();
+                    // link to page on clicking the notification
+                    notification.onclick = () => {
+                        window.location.href = 'https://nithra.in/jobspro/employer/onCall/load'
+                    }
+                    setTimeout(notification.close.bind(notification), 3000)
+                }
+            })
+        }
+    },
+    watch: {
+        async $route(to, from) {
+            this.segment = this.$route.params.segment
+            this.onLoadTableData(this.employerCard.list.id)
+        }
+    },
+    methods: {
+        ClickMethod(jobId, segment) {
+            this.$bvModal.show('modal-footer-lg')
+            this.model_id = jobId
+            this.table = this.segment
+        },
+        async historyIconName() {
+            var localUserId = JSON.parse(localStorage.getItem('userData')).id
+            this.$bvModal.show('modal-call-history')
+            const callAxios = await this.callAxios('/getCallHistory', {
+                localUserId: localUserId
+            }, 'post')
+            this.historyItems = callAxios.data
+        },
+        async onLoadTableData(employerID) {
+            const segment = this.$route.params.segment
+            var localUserId = JSON.parse(localStorage.getItem('userData')).id
+            if (segment == 'statistic') {
+                const chartData = []
+                const chartLabel = []
+                const callAxios = await this.callAxios('/getEmployerStatistic', {
+                    localUserId: localUserId,
+                    segment: segment,
+                    employerID: employerID
+                }, 'post')
+                callAxios.data.forEach((value, index) => {
+                    chartData.push(value.amount)
+                    chartLabel.push(value.monthYear)
+                })
+                this.$refs.realtimeChart.updateSeries([{
+                    data: callAxios.data.reverse()
+                }])
+                // this.$set(this.salesLine.series[0], 'data', [100,200]);
+                // this.$set(this.salesLine.chartOptions.xaxis, 'categories', ['aa','bbb']);
+                console.log(this.salesLine)
+            } else {
+                const callAxios = await this.callAxios('/getEmployerSegment', {
+                    localUserId: localUserId,
+                    segment: segment,
+                    employerID: employerID
+                }, 'post')
+                this.emails = callAxios.data
+            }
+        }
+    },
+}
+</script>
+<style>
+.disableOpacityCustom {
+    /*opacity: 0.4;*/
+    /*cursor: not-allowed;*/
+    display: none
+}
+</style>
