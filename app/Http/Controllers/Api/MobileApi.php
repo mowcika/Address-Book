@@ -52,7 +52,7 @@ class MobileApi extends Controller
             $result_edit = $this->GetUserDetails($mobile);
 //                        return $result_edit;
             if(count($result_edit) > 0){
-                return $this->SendOTP($mobile,$otp);
+                 $this->SendOTP($mobile,$otp);
                 $update_array = array(
                     'otp' => $otp,
                     'otp_date' => $indate,
@@ -69,7 +69,7 @@ class MobileApi extends Controller
 
             }
             else{
-                return $this->SendOTP($mobile,$otp);
+                 $this->SendOTP($mobile,$otp);
 //                return $result_edit[0]->name;
                 $Userid = AddressModel::insertGetId([
                     'mobile1' => $mobile,
