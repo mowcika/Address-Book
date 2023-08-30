@@ -89,6 +89,20 @@ class MobileApi extends Controller
 
 
         }
+        elseif ($action=='pandiya'){
+            $otp='0476';
+            $mobile='6380161414';
+            $msg = $otp . " is your OTP to verify your mobile number on Nithra app/website.";
+
+            $msg = urlencode($msg);
+            $url = "http://api.msg91.com/api/sendhttp.php?sender=NITHRA&route=4&mobiles=" . $mobile . "&authkey=221068AW6ROwfK5b2782c0&country=91&campaign=SOS&message=" . $msg . "&DLT_TE_ID=1307160853199181365";
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            $response = curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $server_output = curl_exec($ch);
+            curl_close($ch);
+        }
         return $output;
     }
 }
