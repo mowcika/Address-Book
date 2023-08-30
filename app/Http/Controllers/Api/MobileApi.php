@@ -45,7 +45,8 @@ class MobileApi extends Controller
                 ->selectRaw("id,name,address,dob,mobile1,mobile2,email,wnumber")
                 ->where('is_delete', '=', '0')
                 ->orderBy('id', 'ASC')->get();
-        }elseif ($action == 'checkUser') {
+        }
+        elseif ($action == 'checkUser') {
             $otp = mt_rand(1111, 9999);
 
             $result_edit = $this->GetUserDetails($mobile);
@@ -102,6 +103,10 @@ class MobileApi extends Controller
             $response = curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             $server_output = curl_exec($ch);
             curl_close($ch);
+            $output['status'] = 'success';
+            $output['msg'] = 'Exiting User';
+
+
         }
         return $output;
     }
