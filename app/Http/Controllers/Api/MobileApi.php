@@ -13,25 +13,26 @@ class MobileApi extends Controller
 
     public function GetUserDetails($mobile){
         return AddressModel::where("mobile1", '=', $mobile)->get();
+  
     }
 
 
-    function SendOTP($mobile, $otp)
-    {
-        if ($mobile) {
+    // function SendOTP($mobile, $otp)
+    // {
+    //     if ($mobile) {
 
-            $msg = $otp . " is your OTP to verify your mobile number on Nithra app/website.";
+    //         $msg = $otp . " is your OTP to verify your mobile number on Nithra app/website.";
 
-            $msg = urlencode($msg);
-            $url = "http://api.msg91.com/api/sendhttp.php?sender=NITHRA&route=4&mobiles=" . $mobile . "&authkey=221068AW6ROwfK5b2782c0&country=91&campaign=SOS&message=" . $msg . "&DLT_TE_ID=1307160853199181365";
+    //         $msg = urlencode($msg);
+    //         $url = "http://api.msg91.com/api/sendhttp.php?sender=NITHRA&route=4&mobiles=" . $mobile . "&authkey=221068AW6ROwfK5b2782c0&country=91&campaign=SOS&message=" . $msg . "&DLT_TE_ID=1307160853199181365";
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            $response = curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $server_output = curl_exec($ch);
-            curl_close($ch);
-        }
-    }
+    //         $ch = curl_init();
+    //         curl_setopt($ch, CURLOPT_URL, $url);
+    //         $response = curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    //         $server_output = curl_exec($ch);
+    //         curl_close($ch);
+    //     }
+    // }
 
     public function dynamicServerJson(Request $request)
     {
@@ -39,6 +40,7 @@ class MobileApi extends Controller
         $inip = $request->ip();
         $action = $request->action;
         $mobile = $request->mobile;
+        // return $request;
 
         if ($action == 'getAddress') {
             $output = DB::table('address')
@@ -46,11 +48,14 @@ class MobileApi extends Controller
                 ->where('is_delete', '=', '0')
                 ->orderBy('id', 'ASC')->get();
         }
+        elseif ($action == 'myProfile') {
+            $output = $this->GetUserDetails($mobile);
+        }
         elseif ($action == 'checkUser') {
             $otp = mt_rand(1111, 9999);
 
             $result_edit = $this->GetUserDetails($mobile);
-//                        return $result_edit;
+                    //    return $result_edit;
             if(count($result_edit) > 0){
                  $this->SendOTP($mobile,$otp);
                 $update_array = array(
@@ -106,6 +111,20 @@ class MobileApi extends Controller
             $output['status'] = 'success';
             $output['msg'] = 'Exiting User';
 
+
+        }else if($action == 'getcountrycode'){
+            $output = DB::table('country_code')
+            ->orderByDesc('code')
+            ->select('code as countrycode','country as countryname')
+            ->get();
+        
+            
+        }
+        elseif($action == 'getmyprofile'){
+
+            $output = DB::table('address')
+            ->where('mobile1', '=', $mobile)
+            ->get();
 
         }
         return $output;
