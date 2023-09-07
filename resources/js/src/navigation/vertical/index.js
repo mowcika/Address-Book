@@ -31,5 +31,6 @@ tagVariant
 
 */
 import dashboard from './dashboard'
+import master from './master'
 // Array of sections
-export default []
+export default [...dashboard, ...master]
